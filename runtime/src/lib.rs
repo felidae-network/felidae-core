@@ -90,10 +90,14 @@ pub use pallet_adoption;
 ///import the did pallet.
 pub use pallet_did;
 
+<<<<<<< HEAD
 ///import the pallet verification protocol
 pub use pallet_verification_protocol;
 
 use pallet_did::types::Attribute;
+=======
+// use pallet_did::types::Attribute;
+>>>>>>> 040a8a85a743242d140651aea949b0387d7d920e
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -1144,6 +1148,7 @@ impl pallet_adoption::Config for Runtime {
 impl pallet_did::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Time = Timestamp;
+	type WeightInfo = pallet_did::weights::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -1248,10 +1253,14 @@ mod benches {
 		[frame_benchmarking, BaselineBench::<Runtime>]
 		[frame_system, SystemBench::<Runtime>]
 		[pallet_babe, Babe]
+		[pallet_bags_list, VoterBagsList]
 		[pallet_balances, Balances]
 		[pallet_timestamp, Timestamp]
+		[pallet_collective, Council]
 		[pallet_elections_phragmen, Elections]
+		[pallet_election_provider_support_benchmarking, EPSBench::<Runtime>]
 		[pallet_scheduler, Scheduler]
+		[pallet_session, SessionBench::<Runtime>]
 		[pallet_treasury, Treasury]
 		[pallet_democracy, Democracy]
 		[pallet_collective, Council]
@@ -1542,24 +1551,24 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl pallet_did_rpc_runtime_api::ReadAttributeApi<
-	Block,
-	AccountId,
-	BlockNumber,
-	Moment,
-	> for Runtime
-	{
-		fn read_attribute(
-			did: AccountId,
-			name: Vec<u8>,
-		) -> Option<Attribute<BlockNumber, Moment>> {
-			DidModule::read_attribute(&did, &name)
-		}
+	// impl pallet_did_rpc_runtime_api::ReadAttributeApi<
+	// Block,
+	// AccountId,
+	// BlockNumber,
+	// Moment,
+	// > for Runtime
+	// {
+	// 	fn read_attribute(
+	// 		did: AccountId,
+	// 		name: Vec<u8>,
+	// 	) -> Option<Attribute<BlockNumber, Moment>> {
+	// 		DidModule::read_attribute(&did, &name)
+	// 	}
 
-		fn get_a_fixed_value(i:u32, j:u32) -> u32 {
-			DidModule::get_a_value(i,j)
-		}
-	}
+	// 	fn get_a_fixed_value(i:u32, j:u32) -> u32 {
+	// 		DidModule::get_a_value(i,j)
+	// 	}
+	// }
 
 	impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance> for Runtime {
 		fn query_info(
@@ -1602,7 +1611,7 @@ impl_runtime_apis! {
 			// Trying to add benchmarks directly to the Session Pallet caused cyclic dependency
 			// issues. To get around that, we separated the Session benchmarks into its own crate,
 			// which is why we need these two lines below.
-			// use pallet_session_benchmarking::Pallet as SessionBench;
+			use pallet_session_benchmarking::Pallet as SessionBench;
 			use pallet_offences_benchmarking::Pallet as OffencesBench;
 			use pallet_election_provider_support_benchmarking::Pallet as EPSBench;
 			use frame_benchmarking::{baseline, Benchmarking, BenchmarkList};
@@ -1611,7 +1620,14 @@ impl_runtime_apis! {
 			use baseline::Pallet as BaselineBench;
 
 			let mut list = Vec::<BenchmarkList>::new();
-			list_benchmarks!(list, extra);
+			// list_benchmarks!(list, extra);
+
+			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
+			list_benchmark!(list, extra, pallet_balances, Balances);
+			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
+			list_benchmark!(list, extra, pallet_multisig, Multisig);
+			list_benchmark!(list, extra, pallet_did, DidModule);
+
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -1651,7 +1667,13 @@ impl_runtime_apis! {
 
 			let mut batches = Vec::<BenchmarkBatch>::new();
 			let params = (&config, &whitelist);
-			add_benchmarks!(params, batches);
+			// add_benchmarks!(params, batches);
+
+			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
+			add_benchmark!(params, batches, pallet_balances, Balances);
+			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
+			add_benchmark!(params, batches, pallet_multisig, Multisig);
+			add_benchmark!(params, batches, pallet_did, DidModule);
 
 			Ok(batches)
 		}

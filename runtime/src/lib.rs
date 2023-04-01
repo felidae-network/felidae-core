@@ -90,14 +90,10 @@ pub use pallet_adoption;
 ///import the did pallet.
 pub use pallet_did;
 
-<<<<<<< HEAD
 ///import the pallet verification protocol
 pub use pallet_verification_protocol;
 
 use pallet_did::types::Attribute;
-=======
-// use pallet_did::types::Attribute;
->>>>>>> 040a8a85a743242d140651aea949b0387d7d920e
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -124,6 +120,10 @@ pub type Moment = u64;
 pub mod constants;
 
 mod voter_bags;
+
+// import chain extension for Did pallet
+mod chain_extension;
+use chain_extension::DidChainExtension;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -583,8 +583,8 @@ impl Get<Option<BalancingConfig>> for OffchainRandomBalancing {
 			max => {
 				let seed = sp_io::offchain::random_seed();
 				let random = <u32>::decode(&mut TrailingZeroInput::new(&seed))
-					.expect("input is padded with zeroes; qed")
-					% max.saturating_add(1);
+					.expect("input is padded with zeroes; qed") %
+					max.saturating_add(1);
 				random as usize
 			},
 		};
@@ -962,7 +962,7 @@ impl pallet_contracts::Config for Runtime {
 	type CallStack = [pallet_contracts::Frame<Self>; 31];
 	type WeightPrice = pallet_transaction_payment::Pallet<Self>;
 	type WeightInfo = pallet_contracts::weights::SubstrateWeight<Self>;
-	type ChainExtension = ();
+	type ChainExtension = DidChainExtension;
 	type DeletionQueueDepth = DeletionQueueDepth;
 	type DeletionWeightLimit = DeletionWeightLimit;
 	type Schedule = Schedule;
@@ -1091,15 +1091,9 @@ impl pallet_template::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 }
 
-//parameters of pallet verification protocol
+// //parameters of pallet verification protocol
 parameter_types! {
-	pub const MaxLengthListOfDocuments: u32= 150;
-	pub const MinCountatVPRevealStage: u32= 2;
-	pub const MinCountatAllotStage: u32 = 2;
-	pub const MinCountatAckAcceptStage: u32 = 2;
-	pub const MinCountatSubmitVPStage: u32 = 2;
-	pub const MinCountatRevealStage: u32 = 2;
-	pub const MaxWaitingTimeAtStages: u32 = 1 * HOURS as u32 ;
+pub const MaxLengthListOfDocuments: u32 = 150;
 }
 
 // Configure the  pallet verification protocol
@@ -1107,21 +1101,9 @@ impl pallet_verification_protocol::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type PalletId = TreasuryPalletId;
 	type Currency = Balances;
-	type Balance = u128;
+	// type Balance = u128;
 
 	type MaxLengthListOfDocuments = MaxLengthListOfDocuments;
-	/// Minimum number of verification parameters required at the reveal phase. say X
-	type MinCountatVPRevealStage = MinCountatVPRevealStage;
-	/// Count multiplier to above at the allotment stage. say 4 * X
-	type MinCountatAllotStage = MinCountatAllotStage;
-	/// Count multiplier to minimum at the Ack stage. say 3 * X
-	type MinCountatAckAcceptStage = MinCountatAckAcceptStage;
-	/// Count multiplier to minimum at the Submit Verification Para stage. say 2 * X
-	type MinCountatSubmitVPStage = MinCountatSubmitVPStage;
-	/// Count multiplier to minimum at the Reveal stage. say X equal to the minimum
-	type MinCountatRevealStage = MinCountatRevealStage;
-	/// Waiting period at each stage to receive CountXat<stage> submissions. say 1hr (3600/6 = 600 blocks)
-	type MaxWaitingTimeAtStages = MaxWaitingTimeAtStages;
 }
 
 parameter_types! {
@@ -1148,7 +1130,6 @@ impl pallet_adoption::Config for Runtime {
 impl pallet_did::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Time = Timestamp;
-	type WeightInfo = pallet_did::weights::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -1253,14 +1234,10 @@ mod benches {
 		[frame_benchmarking, BaselineBench::<Runtime>]
 		[frame_system, SystemBench::<Runtime>]
 		[pallet_babe, Babe]
-		[pallet_bags_list, VoterBagsList]
 		[pallet_balances, Balances]
 		[pallet_timestamp, Timestamp]
-		[pallet_collective, Council]
 		[pallet_elections_phragmen, Elections]
-		[pallet_election_provider_support_benchmarking, EPSBench::<Runtime>]
 		[pallet_scheduler, Scheduler]
-		[pallet_session, SessionBench::<Runtime>]
 		[pallet_treasury, Treasury]
 		[pallet_democracy, Democracy]
 		[pallet_collective, Council]
@@ -1551,24 +1528,24 @@ impl_runtime_apis! {
 		}
 	}
 
-	// impl pallet_did_rpc_runtime_api::ReadAttributeApi<
-	// Block,
-	// AccountId,
-	// BlockNumber,
-	// Moment,
-	// > for Runtime
-	// {
-	// 	fn read_attribute(
-	// 		did: AccountId,
-	// 		name: Vec<u8>,
-	// 	) -> Option<Attribute<BlockNumber, Moment>> {
-	// 		DidModule::read_attribute(&did, &name)
-	// 	}
+	impl pallet_did_rpc_runtime_api::ReadAttributeApi<
+	Block,
+	AccountId,
+	BlockNumber,
+	Moment,
+	> for Runtime
+	{
+		fn read_attribute(
+			did: AccountId,
+			name: Vec<u8>,
+		) -> Option<Attribute<BlockNumber, Moment>> {
+			DidModule::read_attribute(&did, &name)
+		}
 
-	// 	fn get_a_fixed_value(i:u32, j:u32) -> u32 {
-	// 		DidModule::get_a_value(i,j)
-	// 	}
-	// }
+		fn get_a_fixed_value(i:u32, j:u32) -> u32 {
+			DidModule::get_a_value(i,j)
+		}
+	}
 
 	impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance> for Runtime {
 		fn query_info(
@@ -1611,7 +1588,7 @@ impl_runtime_apis! {
 			// Trying to add benchmarks directly to the Session Pallet caused cyclic dependency
 			// issues. To get around that, we separated the Session benchmarks into its own crate,
 			// which is why we need these two lines below.
-			use pallet_session_benchmarking::Pallet as SessionBench;
+			// use pallet_session_benchmarking::Pallet as SessionBench;
 			use pallet_offences_benchmarking::Pallet as OffencesBench;
 			use pallet_election_provider_support_benchmarking::Pallet as EPSBench;
 			use frame_benchmarking::{baseline, Benchmarking, BenchmarkList};
@@ -1620,14 +1597,7 @@ impl_runtime_apis! {
 			use baseline::Pallet as BaselineBench;
 
 			let mut list = Vec::<BenchmarkList>::new();
-			// list_benchmarks!(list, extra);
-
-			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
-			list_benchmark!(list, extra, pallet_balances, Balances);
-			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
-			list_benchmark!(list, extra, pallet_multisig, Multisig);
-			list_benchmark!(list, extra, pallet_did, DidModule);
-
+			list_benchmarks!(list, extra);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -1667,13 +1637,7 @@ impl_runtime_apis! {
 
 			let mut batches = Vec::<BenchmarkBatch>::new();
 			let params = (&config, &whitelist);
-			// add_benchmarks!(params, batches);
-
-			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
-			add_benchmark!(params, batches, pallet_balances, Balances);
-			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
-			add_benchmark!(params, batches, pallet_multisig, Multisig);
-			add_benchmark!(params, batches, pallet_did, DidModule);
+			add_benchmarks!(params, batches);
 
 			Ok(batches)
 		}

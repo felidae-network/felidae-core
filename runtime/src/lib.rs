@@ -77,6 +77,10 @@ pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::{CurrencyAdapter, Multiplier, TargetedFeeAdjustment};
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 // pub use sp_runtime::BuildStorage;
+mod chain_extension;
+use crate::pallet_did::types::*;
+use chain_extension::DidChainExtension;
+use pallet_did::did::Did;
 
 #[cfg(any(feature = "std", test))]
 pub use pallet_staking::StakerStatus;
@@ -576,8 +580,8 @@ impl Get<Option<BalancingConfig>> for OffchainRandomBalancing {
 			max => {
 				let seed = sp_io::offchain::random_seed();
 				let random = <u32>::decode(&mut TrailingZeroInput::new(&seed))
-					.expect("input is padded with zeroes; qed")
-					% max.saturating_add(1);
+					.expect("input is padded with zeroes; qed") %
+					max.saturating_add(1);
 				random as usize
 			},
 		};
@@ -955,7 +959,7 @@ impl pallet_contracts::Config for Runtime {
 	type CallStack = [pallet_contracts::Frame<Self>; 31];
 	type WeightPrice = pallet_transaction_payment::Pallet<Self>;
 	type WeightInfo = pallet_contracts::weights::SubstrateWeight<Self>;
-	type ChainExtension = ();
+	type ChainExtension = DidChainExtension;
 	type DeletionQueueDepth = DeletionQueueDepth;
 	type DeletionWeightLimit = DeletionWeightLimit;
 	type Schedule = Schedule;
@@ -1113,8 +1117,8 @@ impl pallet_verification_protocol::Config for Runtime {
 	// type MinCountatSubmitVPStage = MinCountatSubmitVPStage;
 	// /// Count multiplier to minimum at the Reveal stage. say X equal to the minimum
 	// type MinCountatRevealStage = MinCountatRevealStage;
-	// /// Waiting period at each stage to receive CountXat<stage> submissions. say 1hr (3600/6 = 600 blocks)
-	// type MaxWaitingTimeAtStages = MaxWaitingTimeAtStages;
+	// /// Waiting period at each stage to receive CountXat<stage> submissions. say 1hr (3600/6 =
+	// 600 blocks) type MaxWaitingTimeAtStages = MaxWaitingTimeAtStages;
 }
 
 parameter_types! {
@@ -1544,24 +1548,20 @@ impl_runtime_apis! {
 		}
 	}
 
-	// impl pallet_did_rpc_runtime_api::ReadAttributeApi<
-	// Block,
-	// AccountId,
-	// BlockNumber,
-	// Moment,
-	// > for Runtime
-	// {
-	// 	fn read_attribute(
-	// 		did: AccountId,
-	// 		name: Vec<u8>,
-	// 	) -> Option<Attribute<BlockNumber, Moment>> {
-	// 		DidModule::read_attribute(&did, &name)
-	// 	}
-
-	// 	fn get_a_fixed_value(i:u32, j:u32) -> u32 {
-	// 		DidModule::get_a_value(i,j)
-	// 	}
-	// }
+	impl pallet_did_rpc_runtime_api::ReadAttributeApi<
+	Block,
+	AccountId,
+	BlockNumber,
+	Moment,
+	> for Runtime
+	{
+		fn read(
+			did: AccountId,
+			name: Vec<u8>,
+		) -> Option<Attribute<BlockNumber, Moment>> {
+			DidModule::read(&did, &name)
+		}
+	}
 
 	impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance> for Runtime {
 		fn query_info(

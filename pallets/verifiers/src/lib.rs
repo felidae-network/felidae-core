@@ -92,14 +92,27 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// parameters. [something, who]
-		SomethingStored(u32, T::AccountId),
 		/// parameters. [verifier_account_id]
-		VerifierRegistrationRequest(T::AccountId),
+		VerifierRegistrationRequest{
+			verifier: T::AccountId
+		},
 		/// parameters. [verifier_account_id, amount]
-		VerifierDeposite(T::AccountId, BalanceOf<T>),
+		VerifierDeposite{
+			verifier: T::AccountId, 
+			amount: BalanceOf<T>
+		},
 		/// Update protocol parameters for stages
-		ParametersUpdated(ProtocolParameterValues),
+		ParametersUpdated{
+			minimum_deposit_for_being_active: u128,
+			threshold_accuracy_score: FixedI64,
+			penalty_waiver_score: FixedI64,
+			resumption_waiting_period: u32,
+			reward_amount: u128,
+			penalty_amount: u128,
+			penalty_amount_not_completed: u128,
+			accuracy_weight: FixedI64,
+			reputation_score_weight: FixedI64,
+		},
 	}
 
 	// Errors inform users that something went wrong.
@@ -240,7 +253,10 @@ pub mod pallet {
 			<Verifiers<T>>::insert(who.clone(), verifier.clone());
 
 			// Emit an event.
-			Self::deposit_event(Event::VerifierRegistrationRequest(who));
+			Self::deposit_event(
+				Event::VerifierRegistrationRequest{
+					verifier: who
+				});
 			// Return a successful DispatchResultWithPostInfo
 			Ok(())
 		}
@@ -279,7 +295,11 @@ pub mod pallet {
 			})?;
 
 			// Emit an event.
-			Self::deposit_event(Event::VerifierDeposite(who, deposit));
+			Self::deposit_event(
+				Event::VerifierDeposite{
+					verifier: who, 
+					amount: deposit
+				});
 			// Return a successful DispatchResult
 			Ok(())
 		}
@@ -295,7 +315,18 @@ pub mod pallet {
 			let _who = ensure_signed(origin)?;
 			ProtocolParameters::<T>::put(&new_parameters);
 
-			Self::deposit_event(Event::ParametersUpdated(new_parameters));
+			Self::deposit_event(
+				Event::ParametersUpdated{
+					minimum_deposit_for_being_active: new_parameters.minimum_deposit_for_being_active,
+					threshold_accuracy_score: new_parameters.threshold_accuracy_score,
+					penalty_waiver_score: new_parameters.penalty_waiver_score,
+					resumption_waiting_period: new_parameters.resumption_waiting_period,
+					reward_amount: new_parameters.reward_amount,
+					penalty_amount: new_parameters.penalty_amount,
+					penalty_amount_not_completed: new_parameters.penalty_amount_not_completed,
+					accuracy_weight: new_parameters.accuracy_weight,
+					reputation_score_weight: new_parameters.reputation_score_weight,
+				});
 			Ok(())
 		}
 	}

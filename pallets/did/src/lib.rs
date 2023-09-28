@@ -93,11 +93,18 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// Event emitted when an attribute has been added.
-		AttributeAdded(T::AccountId, Vec<u8>, Vec<u8>, Option<T::BlockNumber>),
-		/// Attribute not found
-		AttributeNotFound(T::AccountId, T::AccountId, Vec<u8>),
+		AttributeAdded{
+			identity: T::AccountId, 
+			name: Vec<u8>, 
+			value: Vec<u8>, 
+			valid_for: Option<T::BlockNumber>
+		},
 		/// Event emitted when an attribute is read successfully
-		AttributeFetched(T::AccountId, T::AccountId, Vec<u8>),
+		AttributeFetched{
+			who: T::AccountId, 
+			identity: T::AccountId, 
+			name: Vec<u8>
+		},
 	}
 
 	// Errors inform users that something went wrong.
@@ -273,7 +280,12 @@ pub mod pallet {
 
 			Self::create_attribute(&who, &identity, &name, &value, valid_for)?;
 			// Emit an event that a new id has been added.
-			Self::deposit_event(Event::AttributeAdded(identity, name, value, valid_for));
+			Self::deposit_event(Event::AttributeAdded{
+				identity: identity, 
+				name: name, 
+				value: value, 
+				valid_for: valid_for
+			});
 			Ok(())
 		}
 
@@ -293,7 +305,11 @@ pub mod pallet {
 				Some(_) => {
 					//emit event on read of an attribute
 					//may be considered to suppress it
-					Self::deposit_event(Event::AttributeFetched(who, identity, name));
+					Self::deposit_event(Event::AttributeFetched{
+						who: who, 
+						identity: identity, 
+						name: name
+					});
 				},
 				None => {
 					//raise error

@@ -124,22 +124,34 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// Event emitted when a new member is added.
-		NewMemberAdded(T::AccountId),
-		/// Event emitted when a member is removed.
-		MemberRemoved(T::AccountId),
 		///New partner addition event
-		NewPartnerAdded(Vec<u8>, Vec<u8>),
+		NewPartnerAdded{
+			partner_id: Vec<u8>, 
+			partner_info_cid: Vec<u8>
+		},
 		///New adoption event type added
-		NewEventTypeAdded(Vec<u8>, Vec<u8>),
+		NewEventTypeAdded{
+			event_type_id: Vec<u8>, 
+			details: Vec<u8>
+		},
 		///New adoption event added
-		NewEventAdded(Vec<u8>),
+		NewEventAdded{
+			event_id: Vec<u8>
+		},
 		///new participant added to an event
-		NewParticipantAdded(Vec<u8>, T::AccountId),
+		NewParticipantAdded{
+			event_id: Vec<u8>, 
+			participant: T::AccountId
+		},
 		/// token minted to an account
-		MintedToAccountID(T::AccountId, u128),
+		MintedToAccountID{
+			participants: T::AccountId, 
+			event_value: u128
+		},
 		/// 0-> created, 1-> event-is-live, 2-> event-paused, 3-> event-is-over
-		EventStateUpdated(u32),
+		EventStateUpdated{
+			event_state: u32
+		},
 	}
 
 	// Errors inform users that something went wrong.
@@ -248,7 +260,11 @@ pub mod pallet {
 			Partners::<T>::insert(&bounded_pid, (&bounded_cid, current_block));
 
 			// Emit an event that a new member has been added.
-			Self::deposit_event(Event::NewPartnerAdded(bounded_pid.to_vec(), bounded_cid.to_vec()));
+			Self::deposit_event(
+				Event::NewPartnerAdded{
+				 	partner_id: bounded_pid.to_vec(), 
+					partner_info_cid: bounded_cid.to_vec()
+				});
 
 			Ok(())
 		}
@@ -308,10 +324,11 @@ pub mod pallet {
 			);
 
 			// Emit an event that a new vent type has been added.
-			Self::deposit_event(Event::NewEventTypeAdded(
-				bounded_event_type.to_vec(),
-				bounded_event_details.to_vec(),
-			));
+			Self::deposit_event(
+				Event::NewEventTypeAdded{
+					event_type_id: bounded_event_type.to_vec(),
+					details: bounded_event_details.to_vec(),
+			});
 
 			Ok(())
 		}
@@ -434,7 +451,10 @@ pub mod pallet {
 			AdoptionEventDataRecords::<T>::insert(&bounded_event_id, (&event_data, current_block));
 
 			// Emit an event that a new vent type has been added.
-			Self::deposit_event(Event::NewEventAdded(bounded_event_id.to_vec()));
+			Self::deposit_event(
+				Event::NewEventAdded{
+					event_id: bounded_event_id.to_vec()
+			});
 
 			Ok(())
 		}
@@ -490,7 +510,11 @@ pub mod pallet {
 			AdoptionEventParticipants::<T>::insert(&bounded_event_id, &participant, 1);
 
 			// Emit an event that a new vent type has been added.
-			Self::deposit_event(Event::NewParticipantAdded(bounded_event_id.to_vec(), participant));
+			Self::deposit_event(
+				Event::NewParticipantAdded{
+					event_id: bounded_event_id.to_vec(), 
+					participant: participant
+				});
 			Ok(())
 		}
 
@@ -548,7 +572,11 @@ pub mod pallet {
 					//update the mint status of the participant
 					AdoptionEventParticipants::<T>::mutate(&bounded_event_id, &p.0, |x| *x = 0); //set the value to 0->not-be-minted
 																			 // Emit mint amount.
-					Self::deposit_event(Event::MintedToAccountID(p.0, mint_value));
+					Self::deposit_event(
+						Event::MintedToAccountID{
+							participants: p.0, 
+							event_value: mint_value
+						});
 				}
 			}
 
@@ -603,7 +631,10 @@ pub mod pallet {
 				}
 			});
 
-			Self::deposit_event(Event::EventStateUpdated(event_state));
+			Self::deposit_event(
+				Event::EventStateUpdated{
+					event_state: event_state
+				});
 
 			Ok(())
 		}

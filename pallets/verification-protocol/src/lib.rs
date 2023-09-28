@@ -135,33 +135,66 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// On DID verification request accpted
 		/// parameters. [consumer_accountId]
-		DidCreationRequest(T::AccountId),
-
-		VerificatoinTaskAllotted {
+		DidCreationRequest{
+			consumer: T::AccountId
+		},
+		/// Verificatoin Task Allotted
+		/// parameters. [ consumer_accountId, verifier_accountId, document_url]
+		VerificatoinTaskAllotted{
 			consumer: T::AccountId,
 			verifier: T::AccountId,
 			document: Vec<u8>,
 		},
 		/// Update protocol parameters for stages
-		ParametersUpdated(ProtocolParameterValues),
+		ParametersUpdated{
+			max_length_list_of_documents: u16,
+			min_count_at_allot_stage: u16,
+			min_count_at_ack_accept_stage: u16,
+			min_count_at_submit_vp_stage: u16,
+			min_count_at_reveal_stage: u16,
+			max_waiting_time_at_stages:u32,
+			threshold_winning_percentage: u8,
+		},
 		/// Task accepted by the verifier
 		/// parameters. [ verifier_accountId, consumer_accountId]
-		TaskAccepted(T::AccountId, T::AccountId),
+		TaskAccepted{
+			verifier: T::AccountId, 
+			consumer: T::AccountId,
+		},
 		/// verification data submitted by the verifier
 		/// parameters. [ verifier_accountId, consumer_accountId]
-		VpSubmitted(T::AccountId, T::AccountId),
+		VpSubmitted{
+			verifier: T::AccountId, 
+			consumer: T::AccountId,
+		},
 		/// Verification data revealed by the verifier
 		/// parameters. [ verifier_accountId, consumer_accountId]
-		Revealed(T::AccountId, T::AccountId),
+		Revealed{
+			verifier: T::AccountId, 
+			consumer: T::AccountId,
+		},
 		/// Verification completed event
 		/// parameters. [ consumer_accountId, DidCreationStatus]
-		DidCreationResult(T::AccountId, DidCreationStatus),
+		DidCreationResult{
+			consumer: T::AccountId, 
+			did_creation_status: DidCreationStatus,
+		},
 		/// parameters [IdType]
-		IdTypeWhitelisted(IdDocumentOf<T>),
+		IdTypeWhitelisted{
+			name: BoundedVec<u8, ConstU32<150>>,
+			issuer: BoundedVec<u8, ConstU32<150>>,
+			country: BoundedVec<u8, ConstU32<100>>
+		},
 		/// parameters [IdType]
-		IdTypeRemoved(IdDocumentOf<T>),
+		IdTypeRemoved{
+			name: BoundedVec<u8, ConstU32<150>>,
+			issuer: BoundedVec<u8, ConstU32<150>>,
+			country: BoundedVec<u8, ConstU32<100>>
+		},
 		/// Invalidated Ids
-		DidInvalidation(BoundedVec<T::AccountId, ConstU32<1000>>),
+		DidInvalidation{
+			invalidated_ids: BoundedVec<T::AccountId, ConstU32<1000>>
+		},
 	}
 
 	// Errors inform users that something went wrong.
@@ -257,7 +290,7 @@ pub mod pallet {
 			Self::create_verification_request(&_who, _list_of_documents)?;
 
 			// Emit an event.
-			Self::deposit_event(Event::DidCreationRequest(_who));
+			Self::deposit_event(Event::DidCreationRequest{ consumer: _who });
 
 			Ok(())
 		}
@@ -277,7 +310,12 @@ pub mod pallet {
 			Self::ack_verification_task(&_who, &consumer_account_id, confidence_score)?;
 
 			// emit event on ack
-			Self::deposit_event(Event::TaskAccepted(_who, consumer_account_id));
+			Self::deposit_event(
+				Event::TaskAccepted{
+					verifier: _who, 
+					consumer: consumer_account_id 
+				});
+
 			Ok(())
 		}
 
@@ -297,7 +335,12 @@ pub mod pallet {
 				&consumer_account_id,
 				verification_parameters,
 			)?;
-			Self::deposit_event(Event::VpSubmitted(_who, consumer_account_id));
+			Self::deposit_event(
+				Event::VpSubmitted{
+					verifier: _who, 
+					consumer: consumer_account_id
+				});
+
 			Ok(())
 		}
 
@@ -312,7 +355,17 @@ pub mod pallet {
 			let _who = ensure_signed(origin)?;
 			ProtocolParameters::<T>::put(&new_parameters);
 
-			Self::deposit_event(Event::ParametersUpdated(new_parameters));
+			Self::deposit_event(
+				Event::ParametersUpdated{
+					max_length_list_of_documents: new_parameters.max_length_list_of_documents,
+					min_count_at_allot_stage: new_parameters.min_count_at_allot_stage,
+					min_count_at_ack_accept_stage: new_parameters.min_count_at_ack_accept_stage,
+					min_count_at_submit_vp_stage: new_parameters.min_count_at_submit_vp_stage,
+					min_count_at_reveal_stage: new_parameters.min_count_at_reveal_stage,
+					max_waiting_time_at_stages:new_parameters.max_waiting_time_at_stages,
+					threshold_winning_percentage: new_parameters.threshold_winning_percentage,
+			});
+
 			Ok(())
 		}
 
@@ -335,7 +388,12 @@ pub mod pallet {
 				clear_parameters,
 				secret,
 			)?;
-			Self::deposit_event(Event::Revealed(_who, consumer_account_id));
+			Self::deposit_event(
+				Event::Revealed{
+					verifier: _who, 
+					consumer: consumer_account_id
+			});
+
 			Ok(())
 		}
 
@@ -357,7 +415,13 @@ pub mod pallet {
 					.map_err(|_| Error::<T>::UpdateFailed)?;
 			}
 
-			Self::deposit_event(Event::IdTypeWhitelisted(id_type));
+			Self::deposit_event(
+				Event::IdTypeWhitelisted{
+					name: id_type.name,
+					issuer: id_type.issuer,
+					country: id_type.country
+				});
+
 			Ok(())
 		}
 
@@ -395,7 +459,13 @@ pub mod pallet {
 				});
 			}
 
-			Self::deposit_event(Event::IdTypeRemoved(id_type));
+			Self::deposit_event(
+				Event::IdTypeRemoved{
+					name: id_type.name,
+					issuer: id_type.issuer,
+					country: id_type.country
+				});
+
 			Ok(())
 		}
 		/// Removes a whitelisted ID Type. It takes new IdType. After removing, if no entry
@@ -419,7 +489,11 @@ pub mod pallet {
 			}
 			// let invalidated_ids_bounded: BoundedVec<T::AccountId, ConstU32<1000>> =
 			// 	invalidated_ids.try_into().expect("it can not be more than 1000");
-			Self::deposit_event(Event::DidInvalidation(ids));
+			Self::deposit_event(
+				Event::DidInvalidation{
+					invalidated_ids: ids
+				});
+
 			Ok(())
 		}
 	}
@@ -843,10 +917,10 @@ pub mod pallet {
 					},
 					_ => DidCreationStatus::Rejected,
 				};
-				Self::deposit_event(Event::DidCreationResult(
-					consumer_id.clone(),
-					did_creation_status,
-				));
+				Self::deposit_event(Event::DidCreationResult{
+					consumer: consumer_id.clone(),
+					did_creation_status: did_creation_status,
+				});
 
 				if let Some(completed_request) = VerificationRequests::<T>::take(consumer_id) {
 					let final_result = VerificationResult::<T>::from_completed_request(
